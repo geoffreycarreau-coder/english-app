@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Master - 2000 Words</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        .card-flip { perspective: 1000px; }
+        .card-inner { transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+        .card-inner.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .card-back { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col font-sans">
+
+    <header class="p-4 border-b border-slate-700 sticky top-0 bg-slate-900 z-10">
+        <div class="flex justify-between items-center max-w-md mx-auto">
+            <h1 class="text-xl font-bold text-blue-400 italic">DevEnglish_</h1>
+            <div class="text-sm bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
+                <span id="progress-text">0/0</span> mots
+            </div>
+        </div>
+        <div class="max-w-md mx-auto mt-4">
+            <input type="text" id="search" placeholder="Rechercher un mot..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 max-w-md mx-auto w-full">
+        
+        <div id="flashcard-container" class="mb-8">
+            <h2 class="text-slate-400 text-sm font-semibold uppercase mb-3">Mode Flashcard</h2>
+            <div class="card-flip h-48 w-full" onclick="flipCard()">
+                <div id="card-inner" class="card-inner relative w-full h-full">
+                    <div class="card-front bg-blue-600 rounded-2xl flex flex-col items-center justify-center p-6 shadow-xl">
+                        <span class="text-xs opacity-75 mb-2">ANGLAIS</span>
+                        <p id="card-en" class="text-3xl font-bold text-center">Loading...</p>
+                        <button onclick="speak(event)" class="mt-4 p-2 bg-blue-500 rounded-full hover:bg-blue-400 transition">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <div class="card-back bg-emerald-600 rounded-2xl flex flex-col items-center justify-center p-6 shadow-xl">
+                        <span class="text-xs opacity-75 mb-2">FRANÇAIS</span>
+                        <p id="card-fr" class="text-2xl font-semibold text-center">Traduction</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-between mt-4">
+                <button onclick="prevCard()" class="px-4 py-2 bg-slate-800 rounded-lg border border-slate-700"><i class="fas fa-arrow-left"></i></button>
+                <button onclick="nextCard()" class="px-8 py-2 bg-blue-500 rounded-lg font-bold">Suivant</button>
+            </div>
+        </div>
+
+        <div class="mt-10">
+            <h2 class="text-slate-400 text-sm font-semibold uppercase mb-3">Ma Liste</h2>
+            <div id="word-list" class="space-y-3">
+                </div>
+        </div>
+    </main>
+
+    <footer class="p-4 border-t border-slate-700 bg-slate-900 sticky bottom-0">
+        <div class="flex justify-around max-w-md mx-auto">
+            <button class="flex flex-col items-center text-blue-400"><i class="fas fa-book mb-1"></i><span class="text-xs">Apprendre</span></button>
+            <button class="flex flex-col items-center text-slate-500"><i class="fas fa-star mb-1"></i><span class="text-xs">Favoris</span></button>
+            <button class="flex flex-col items-center text-slate-500"><i class="fas fa-chart-bar mb-1"></i><span class="text-xs">Stats</span></button>
+        </div>
+    </footer>
+
+    <script>
+        // Data : Tu peux ajouter tes 2000 mots ici
+        const vocabulary = [
+            { en: "Actually", fr: "En fait / Réellement", ex: "Actually, it's not that hard." },
+            { en: "However", fr: "Cependant", ex: "However, we need to hurry." },
+            { en: "I would like to...", fr: "Je voudrais...", ex: "I would like to order a coffee." },
+            { en: "What do you mean?", fr: "Que veux-tu dire ?", ex: "" },
+            { en: "How does it work?", fr: "Comment ça marche ?", ex: "" },
+            { en: "Reliable", fr: "Fiable", ex: "This car is very reliable." },
+            { en: "Available", fr: "Disponible", ex: "Are you available tomorrow?" },
+            { en: "Improve", fr: "Améliorer", ex: "I want to improve my English." },
+            { en: "To be honest", fr: "Pour être honnête", ex: "To be honest, I don't know." },
+            { en: "Never mind", fr: "Laisse tomber / Pas grave", ex: "" }
+        ];
+
+        let currentIndex = 0;
+
+        // Éléments DOM
+        const cardInner = document.getElementById('card-inner');
+        const cardEn = document.getElementById('card-en');
+        const cardFr = document.getElementById('card-fr');
+        const listContainer = document.getElementById('word-list');
+        const searchInput = document.getElementById('search');
+
+        // Initialisation
+        function init() {
+            updateCard();
+            renderList(vocabulary);
+            document.getElementById('progress-text').innerText = `1/${vocabulary.length}`;
+        }
+
+        // Gestion Card
+        function flipCard() {
+            cardInner.classList.toggle('flipped');
+        }
+
+        function updateCard() {
+            cardInner.classList.remove('flipped');
+            setTimeout(() => {
+                cardEn.innerText = vocabulary[currentIndex].en;
+                cardFr.innerText = vocabulary[currentIndex].fr;
+                document.getElementById('progress-text').innerText = `${currentIndex + 1}/${vocabulary.length}`;
+            }, 150);
+        }
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % vocabulary.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex - 1 + vocabulary.length) % vocabulary.length;
+            updateCard();
+        }
+
+        // Synthèse Vocale
+        function speak(event) {
+            event.stopPropagation();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = vocabulary[currentIndex].en;
+            msg.lang = 'en-US';
+            window.speechSynthesis.speak(msg);
+        }
+
+        // Liste & Recherche
+        function renderList(data) {
+            listContainer.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center';
+                div.innerHTML = `
+                    <div>
+                        <p class="font-bold text-blue-300">${item.en}</p>
+                        <p class="text-sm text-slate-400">${item.fr}</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-600 text-xs"></i>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = vocabulary.filter(item => 
+                item.en.toLowerCase().includes(val) || item.fr.toLowerCase().includes(val)
+            );
+            renderList(filtered);
+        });
+
+        init();
+    </script>
+</body>
+</html>
